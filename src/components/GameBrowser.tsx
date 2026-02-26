@@ -90,11 +90,44 @@ export default function GameBrowser() {
     )
   }
 
+  // Deduplicate by song name, keeping only the most recent (already sorted newest-first)
+  const dedupedGames = games.reduce<GameData[]>((unique, game) => {
+    const name = songNameFromUrl(game.mp3_url).toLowerCase()
+    const alreadySeen = unique.some(
+      existing => songNameFromUrl(existing.mp3_url).toLowerCase() === name
+    )
+    if (!alreadySeen) unique.push(game)
+    return unique
+  }, [])
+
   return (
     <div>
+      {/* Pagination controls above the grid — only shown when there are multiple pages */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-4 mb-3 text-xs text-gray-400">
+          <button
+            onClick={() => fetchGames(page - 1)}
+            disabled={!hasPrevPage || loading}
+            className="px-3 py-1 bg-gray-800 rounded hover:bg-gray-700 disabled:opacity-30 
+              disabled:cursor-not-allowed transition-colors"
+          >
+            ← Prev
+          </button>
+          <span>{page + 1} / {totalPages}</span>
+          <button
+            onClick={() => fetchGames(page + 1)}
+            disabled={!hasNextPage || loading}
+            className="px-3 py-1 bg-gray-800 rounded hover:bg-gray-700 disabled:opacity-30 
+              disabled:cursor-not-allowed transition-colors"
+          >
+            Next →
+          </button>
+        </div>
+      )}
+
       {/* Game card grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-        {games.map(game => {
+        {dedupedGames.map(game => {
           const name = songNameFromUrl(game.mp3_url)
           const accent = accentColor(game)
           const noteCount = game.midi_data?.notes?.length ?? 0
@@ -139,29 +172,6 @@ export default function GameBrowser() {
           )
         })}
       </div>
-
-      {/* Pagination controls — only shown when there are multiple pages */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-4 mt-4 text-xs text-gray-400">
-          <button
-            onClick={() => fetchGames(page - 1)}
-            disabled={!hasPrevPage || loading}
-            className="px-3 py-1 bg-gray-800 rounded hover:bg-gray-700 disabled:opacity-30 
-              disabled:cursor-not-allowed transition-colors"
-          >
-            ← Prev
-          </button>
-          <span>{page + 1} / {totalPages}</span>
-          <button
-            onClick={() => fetchGames(page + 1)}
-            disabled={!hasNextPage || loading}
-            className="px-3 py-1 bg-gray-800 rounded hover:bg-gray-700 disabled:opacity-30 
-              disabled:cursor-not-allowed transition-colors"
-          >
-            Next →
-          </button>
-        </div>
-      )}
     </div>
   )
 }
