@@ -3,8 +3,9 @@
 import { Suspense } from 'react'
 import { useParams } from 'next/navigation'
 import RhythmGame from '@/components/RhythmGame'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { getGame, type GameData } from '@/lib/supabase'
+import { Midi } from '@tonejs/midi'
 
 function LoadingState() {
   return (
@@ -84,6 +85,39 @@ function GameContent() {
     loadGame()
   }, [gameId])
 
+  // Reconstructs a .mid file from the stored JSON note data and triggers a download
+  const handleDownloadMidi = useCallback(() => {
+    if (!gameData?.midi_data) return
+
+    const midi = new Midi()
+    midi.header.setTempo(gameData.midi_data.tempo || 120)
+
+    const track = midi.addTrack()
+
+    // Re-add each stored note back into a proper MIDI track
+    gameData.midi_data.notes.forEach(note => {
+      track.addNote({
+        midi: note.midi,
+        time: note.time,
+        duration: note.duration,
+        velocity: note.velocity / 127 // @tonejs/midi expects 0-1 range
+      })
+    })
+
+    // Convert to binary and trigger browser download
+    const midiArray = midi.toArray()
+    const blob = new Blob([new Uint8Array(midiArray)], { type: 'audio/midi' })
+    const url = URL.createObjectURL(blob)
+
+    const anchor = document.createElement('a')
+    anchor.href = url
+    anchor.download = `game-${gameId}.mid`
+    document.body.appendChild(anchor)
+    anchor.click()
+    document.body.removeChild(anchor)
+    URL.revokeObjectURL(url)
+  }, [gameData, gameId])
+
   if (loading) return <LoadingState />
   if (!gameId) return <ErrorState message="No game ID provided" />
   if (error) return <ErrorState message={error} />
@@ -116,6 +150,12 @@ function GameContent() {
           <kbd className="px-3 py-1.5 bg-white/10 rounded-lg">S</kbd>
           <kbd className="px-3 py-1.5 bg-white/10 rounded-lg">D</kbd>
         </div>
+        <button
+          onClick={handleDownloadMidi}
+          className="mt-3 text-xs text-white/30 hover:text-white/60 transition-colors"
+        >
+          .mid
+        </button>
       </div>
     </div>
   )

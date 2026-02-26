@@ -179,6 +179,25 @@ export async function createGame(
   return data;
 }
 
+// Fetches a paginated list of games ordered by newest first
+export async function listGames(page = 0, pageSize = 12) {
+  const from = page * pageSize
+  const to = from + pageSize - 1
+
+  const { data, error, count } = await supabase
+    .from(TABLES.GAMES)
+    .select('id, mp3_url, midi_data, visual_customization, created_at', { count: 'exact' })
+    .order('created_at', { ascending: false })
+    .range(from, to)
+
+  if (error) {
+    console.error('Error listing games:', error)
+    throw new Error(`Failed to list games: ${error.message}`)
+  }
+
+  return { games: (data ?? []) as GameData[], total: count ?? 0 }
+}
+
 export async function getGame(id: string) {
   try {
     const { data, error } = await supabase

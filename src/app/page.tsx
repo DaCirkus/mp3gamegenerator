@@ -1,6 +1,7 @@
 'use client';
 
 import FileUpload from '@/components/FileUpload'
+import GameBrowser from '@/components/GameBrowser'
 
 export default function Home() {
   return (
@@ -44,6 +45,12 @@ export default function Home() {
             </div>
           </div>
         </div>
+
+        {/* Community Games */}
+        <section className="mt-8">
+          <h2 className="text-lg font-semibold mb-3 text-gray-200">Community Games</h2>
+          <GameBrowser />
+        </section>
         
         {/* Footer */}
         <footer className="mt-6 text-center text-xs text-gray-500">
